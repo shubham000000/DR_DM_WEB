@@ -718,7 +718,7 @@ def db_simulation_user():
 
                 
                 t_50 = pd.DataFrame(np.array(
-                    [age, 118.98240115718419, 75.55882352941177, HE_ht, HE_wt, HE_wc, HE_BMI, HE_glu, 5.534691417550627, 0, 
+                    [age, 118.98240115718419, 75.55882352941177, HE_ht, HE_wt, HE_wc, HE_BMI, 2, 5.534691417550627, 0, 
                      51.822621449955356, 121.89223722275796, DE1_dur, 88.915500, sex, DE1_31, DE1_32, 1, HE_HCHOL, 
                      HE_DMfh, sm_presnt_3c, HE_obe_6c]).reshape(-1,22),
                             columns=['age', 'HE_sbp', 'HE_dbp', 'HE_ht', 'HE_wt', 'HE_wc', 'HE_BMI', 'HE_glu', 'HE_HbA1c', 'HE_chol', 'HE_HDL_st2', 'HE_TG',
@@ -753,7 +753,7 @@ def db_simulation_user():
                 #                                                    'HE_obe',
                 #                                                    'HE_HP', 'HE_HCHOL', 'HE_HTG', 'sm_presnt', 'sex'])
                 t_75 = pd.DataFrame(np.array(
-                    [age, 124.16230366492147, 77.2324607329843, HE_ht, HE_wt, HE_wc, HE_BMI, HE_glu, 5.739895287958115, 0, 
+                    [age, 124.16230366492147, 77.2324607329843, HE_ht, HE_wt, HE_wc, HE_BMI, 2, 5.739895287958115, 0, 
                      49.74235817995025, 142.69476439790577, DE1_dur, 102.563000, sex, DE1_31, DE1_32, 3, HE_HCHOL, 
                      HE_DMfh, sm_presnt_3c, HE_obe_6c]).reshape(-1,22),
                         columns=['age', 'HE_sbp', 'HE_dbp', 'HE_ht', 'HE_wt', 'HE_wc', 'HE_BMI', 'HE_glu', 'HE_HbA1c', 'HE_chol', 'HE_HDL_st2', 'HE_TG',
@@ -777,7 +777,7 @@ def db_simulation_user():
                 #                                                    'HE_obe',
                 #                                                    'HE_HP', 'HE_HCHOL', 'HE_HTG', 'sm_presnt', 'sex'])
                 t_100 = pd.DataFrame(np.array(
-                    [age, 126.92238648363252, 77.0063357972545, HE_ht, HE_wt, HE_wc, HE_BMI, HE_glu, 6.763727560718057, 0, 
+                    [age, 126.92238648363252, 77.0063357972545, HE_ht, HE_wt, HE_wc, HE_BMI, 2, 6.763727560718057, 0, 
                      46.931693880777516, 172.6441393875396, DE1_dur, 115.661, sex, DE1_31, DE1_32, 3, HE_HCHOL, 
                      HE_DMfh, sm_presnt_3c, HE_obe_6c]).reshape(-1,22),
                             columns=['age', 'HE_sbp', 'HE_dbp', 'HE_ht', 'HE_wt', 'HE_wc', 'HE_BMI', 'HE_glu', 'HE_HbA1c', 'HE_chol', 'HE_HDL_st2', 'HE_TG',
