@@ -675,6 +675,7 @@ def db_simulation_user():
             risk_score_glucose_100 = None
 
             # predicted diabetes class
+            diagnosed_class = None
             predicted_class = None
             predicted_class_glucose_50 = None
             predicted_class_glucose_75 = None
