@@ -29,7 +29,7 @@ import sklearn
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier
-from flask_mysqldb import MySQL
+#from flask_mysqldb import MySQL
 import pymysql
 
 app = Flask(__name__)
@@ -44,7 +44,7 @@ app.config.from_object(Config)
 # app.config['MYSQL_DB'] = 'db_dr_model'
 # app.config['MYSQL_CURSORCLASS'] = 'DictCursor' # This makes results return as dictionaries
 
-mysql = MySQL(app)
+#mysql = MySQL(app)
 
 # Create a connection to the RDS database
 # db = pymysql.connect(
