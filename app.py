@@ -29,13 +29,34 @@ import sklearn
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn import metrics
 from sklearn.ensemble import RandomForestClassifier
-#from flask_mysqldb import MySQL
+from flask_mysqldb import MySQL
 import pymysql
+
+from api import api_blueprint
 
 app = Flask(__name__)
 #app.config['SECRET_KEY'] = '5791628bb0b13ce0c676dfde280ba240'
 
 app.config.from_object(Config)
+
+#app = Flask(__name__)
+# app.config['MYSQL_HOST'] = 'diabet-test-shubham.c9cog5gepkr5.ap-southeast-1.rds.amazonaws.com'
+# app.config['MYSQL_USER'] = 'admin'
+# app.config['MYSQL_PASSWORD'] = 'Shubham123'
+# app.config['MYSQL_DB'] = 'db_dr_model'
+# app.config['MYSQL_CURSORCLASS'] = 'DictCursor' # This makes results return as dictionaries
+
+mysql = MySQL(app)
+
+# Create a connection to the RDS database
+# db = pymysql.connect(
+#     host=app.config['MYSQL_HOST'],
+#     user=app.config['MYSQL_USER'],
+#     password=app.config['MYSQL_PASSWORD'],
+#     db=app.config['MYSQL_DB'],
+#     charset='utf8mb4',
+#     cursorclass=pymysql.cursors.DictCursor
+# )
 
 #mysql = MySQL(app)
 db = pymysql.connect(
@@ -47,6 +68,11 @@ db = pymysql.connect(
     cursorclass=pymysql.cursors.DictCursor
 )
 
+#initialize firebase
+# cred = credentials.Certificate('fbAdminConfig.json')
+# firebase = firebase_admin.initialize_app(cred)
+# pb = pyrebase.initialize_app(json.load(open('fbconfig.json')))
+# db = firestore.client()
 
 #Initialze person as dictionary
 person = {"is_logged_in": False, "username": "", "fullname": "", "email": "", "uid": "", "dob": "", "risk_score_goal": ""}
@@ -73,8 +99,16 @@ cip = cognito.CognitoIdentityProviderWrapper(app)
 
 @app.route('/')
 @app.route('/login', methods=['POST', 'GET'])
+# def login_page():
+#     form = LoginForm()
+#     return render_template('login.html', title='Login', form=form)
 def login_page():
     return redirect(aws_auth.get_sign_in_url())
+
+# @app.route('/register', methods=['POST', 'GET'])
+# def register_page():
+#     form = RegistrationForm()
+#     return render_template('register.html', title='Register', form=form)
 
 @app.route('/login_user', methods=['POST', 'GET'])
 #@api.route('/login_user', methods=['POST', 'GET'])
@@ -133,6 +167,7 @@ def login_user():
         person["risk_score_goal"] = user["risk_score_goal"]
 
     return redirect(url_for('home_page'))
+    
 
 #@app.route('/')
 @app.route('/home')
@@ -219,7 +254,8 @@ def home_page():
                         fourth_latest_report = report_list[3]
                         fourth_date_time_str = fourth_latest_report['diagnosis_time'] + timedelta(hours=8)
                         fourth_diagnosis_date = fourth_date_time_str.strftime("%Y-%m-%d")
-                        if len(report_list) == 5:
+                        #if len(report_list) == 5:
+                        if len(report_list) >= 5:
                             #print(report_list[2])
                             fifth_latest_report = report_list[4]
                             fifth_date_time_str = fifth_latest_report['diagnosis_time'] + timedelta(hours=8)
@@ -276,7 +312,7 @@ def home_page():
                         fourth_diagnosis_date=fourth_diagnosis_date, fifth_latest_report=fifth_latest_report,
                         fifth_diagnosis_date=fifth_diagnosis_date)
     else:
-        return redirect(url_for('login'))
+        return redirect(url_for('login_page'))
 
 
 @app.route('/db_simulation', methods=['POST', 'GET'])
@@ -294,7 +330,7 @@ def db_simulation_page():
       
         cursor = db.cursor()
        # Execute an SQL query to fetch the user with the provided username and password
-        print("Person Email:",person['email'])
+        #print("Person Email:",person['email'])
         cursor.execute(
             "SELECT Users.*, past_report.* FROM Users "
             "JOIN past_report ON Users.Email = past_report.email "
@@ -305,7 +341,8 @@ def db_simulation_page():
             "GROUP BY DATE(diagnosis_time)) "
             "ORDER BY past_report.diagnosis_time DESC;", (person['email'])
         )
-
+        
+        
 
         #past_report_ref = db.collection("Users").document(person["uid"]).collection("past_report")
         past_report_ref = cursor.fetchone()
@@ -315,13 +352,9 @@ def db_simulation_page():
         # query = past_report_ref.order_by("diagnosis_time", direction=firestore.Query.DESCENDING).limit(1)
         # results = query.stream()
         results = past_report_ref
-
-
+        
         cursor.close()
 
-        print("Results: pp", results)
-
-        #report_list = []
         report_list = results
         print("Reposrt_List:", report_list)
         #print('Report List = ', len(report_list))
@@ -392,7 +425,7 @@ def db_simulation_user():
         HE_BMI = HE_wt / ((HE_ht / 100) ** 2)
         DE1_ag = float(result.get('DE1_ag'))
         DE1_dur = (todays_date.year) - DE1_ag
-        eGFR = float(result.get('eGFR'))
+        
         print("Duration:",DE1_dur)
         # pre-processing for obesity
         # if HE_BMI <= 18.5:
@@ -429,6 +462,7 @@ def db_simulation_user():
             HE_TG = float(result.get('HE_TG'))
             HE_glu = float(result.get('HE_glu'))
             HE_HbA1c = float(result.get('HE_HbA1c'))
+            eGFR = float(result.get('eGFR'))
             # HE_BUN = float(result.get('HE_BUN'))
             #HE_crea = float(result.get('HE_crea'))
         else:
@@ -439,6 +473,7 @@ def db_simulation_user():
             HE_TG = None
             HE_glu = None
             HE_HbA1c = None
+            eGFR = None
             # HE_BUN = None
             # HE_crea = None
         if bloodtest == 1:
@@ -708,6 +743,7 @@ def db_simulation_user():
             print(e)
             return render_template('db_simulation.html')
         
+
 @app.route('/report')
 def report_page():
     #based on new aws rds database
@@ -781,6 +817,117 @@ def report_detail_page():
             #print(report['advice_list'][1], report['advice_link_list'][1])
             return render_template('report_detail_noBT.html', report = report)
 
+#@app.route('/diagnosis_report')
+#def diagnosis_report_page():
+#    return render_template('report_detail.html', report = diagnosis_report)
+
+# #take in  feature values
+# #return top 3 most important features with values exceeding diabetic level
+# #test
+# # bloodtest = 0
+# # HE_HbA1c = 7
+# # HE_TG = 170
+# # HE_HP = 4
+# # pa_totMET = 1534
+# # HE_HDL_st2 = 47
+# # HE_HTG = 0
+# # HE_dbp = 74.6373182552504
+# # HE_sbp = 126.7011308562197
+# # HE_BUN = 17.04604200323102
+# # sm_presnt = 1
+# # HE_crea = 0.8868659127625202 
+# # HE_obe = 4
+# # HE_HCHOL = 0
+# # HE_BMI = 26
+# def top_advice(bloodtest,HE_HbA1c,HE_TG,HE_HP,pa_totMET,HE_HDL_st2,HE_HTG,HE_dbp,HE_sbp,HE_BUN,sm_presnt,HE_crea,HE_obe,HE_HCHOL,HE_BMI):
+#     featureValue = []
+#     if bloodtest == 1:
+#         featureValue = [HE_HbA1c,HE_TG,HE_HP,pa_totMET,HE_HDL_st2,HE_HTG,HE_dbp,HE_sbp,HE_BUN,sm_presnt,HE_crea]
+
+#         HE_HbA1c_normal = 5.6238456955615135
+#         HE_TG_normal  = 133.24337205838546
+#         HE_HP_normal  = 1
+#         pa_totMET_normal  = 1729.2093535895146
+#         HE_HDL_st2_normal  = 50.920450758467354
+#         HE_HTG_normal  = 0
+#         HE_dbp_normal  = 76.6131963062258
+#         HE_sbp_normal  = 121.27256478999107
+#         HE_BUN_normal  =  15.61423890378314
+#         sm_presnt_normal  = 0
+#         HE_crea_normal  = 0.8107819481680072
+#         normalValue = [HE_HbA1c_normal, HE_TG_normal, HE_HP_normal, pa_totMET_normal, HE_HDL_st2_normal, 
+#                         HE_HTG_normal, HE_dbp_normal, HE_sbp_normal, HE_BUN_normal, sm_presnt_normal,HE_crea_normal] #ordered by importance
+#         featureName = ["Hemoglobin_A1c (%)", "Triglycerides (mg/dL)", "Hypertension status",
+#                        "Total MET (min/week)", "HDL cholesterol (mg/dL)", "Hyper triglycerides status", "Diastolic blood pressure (mmHg)", 
+#                         "Systolic blood pressure (mmHg)", "Blood urea nitrogen (mg/dL)", "Current smoking status", 
+#                         "Blood serum creatinine (mg/dL)"] #ordered by importance
+#         adviceList = ["Reduce Hemoglobin_A1c:", "Reduce Triglycerides:", "About hypertension:","Physical activity and diabetes:",
+#                       "Cholesteral and diabetes:", "Reduce hypertriglycerides:", "Diastolic blood pressure:",
+#                       "Systolic blood pressure:", "About blood urea nitrogen", "Smoking and diabetes:", "About blood serum creatinine"] #same order
+#         adviceLink = ["https://www.everydayhealth.com/type-2-diabetes/treatment/ways-lower-your-a1c/",
+#                      "https://www.webmd.com/cholesterol-management/lowering-triglyceride-levels",
+#                      "https://www.medicalnewstoday.com/articles/150109#diet",
+#                      "https://www.cdc.gov/diabetes/managing/active.html#:~:text=If%20you%20have%20diabetes%2C%20being,heart%20disease%20and%20nerve%20damage.",
+#                      "https://www.heart.org/en/health-topics/diabetes/diabetes-complications-and-risks/cholesterol-abnormalities--diabetes",
+#                      "https://my.clevelandclinic.org/health/diseases/23942-hypertriglyceridemia#:~:text=A%20normal%20triglyceride%20level%20in,150%20mg%2FdL%20or%20higher.",
+#                      "https://www.uab.edu/news/research/item/10393-diastolic-blood-pressure-how-low-is-too-low",
+#                      "https://www.cdc.gov/bloodpressure/about.htm",
+#                      "https://labs.selfdecode.com/blog/causes-of-high-or-low-blood-urea-nitrogen-bun/",
+#                      "https://www.cdc.gov/tobacco/campaign/tips/diseases/diabetes.html#:~:text=We%20now%20know%20that%20smoking%20is%20one%20cause%20of%20type%202%20diabetes.&text=In%20fact%2C%20people%20who%20smoke,people%20who%20don't%20smoke.&text=People%20with%20diabetes%20who%20smoke,and%20with%20managing%20their%20condition.",
+#                      "https://www.medicalnewstoday.com/articles/322380"]
+#     else:
+#         featureValue = [pa_totMET,HE_HTG,sm_presnt,HE_obe,HE_HCHOL,HE_BMI]
+#         pa_totMET_normal  = 1729.2093535895146
+#         HE_HTG_normal  = 0
+#         sm_presnt_normal  = 0
+#         HE_obe_normal = 2
+#         HE_HCHOL_normal = 0
+#         HE_BMI_normal = 23.879052007717448
+#         normalValue = [pa_totMET_normal, HE_HTG_normal, sm_presnt_normal, HE_obe_normal, HE_HCHOL_normal, HE_BMI_normal]
+#         featureName = ["Total MET (min/week)", "Hyper triglycerides status", "Current smoking status", 
+#                        "Obesity status", "Hyperlipidemia status", "Body mass index (kg/m2)"]
+#         adviceList = ["Physical activity and diabetes:", "Reduce hypertriglycerides:", "Smoking and diabetes:", 
+#                      "Obesity and diabetes:","About hyperlipidemia:", "BMI as a risk factor of diabetes:"] #same order
+#         adviceLink = ["https://www.cdc.gov/diabetes/managing/active.html#:~:text=If%20you%20have%20diabetes%2C%20being,heart%20disease%20and%20nerve%20damage.",
+#                       "https://my.clevelandclinic.org/health/diseases/23942-hypertriglyceridemia#:~:text=A%20normal%20triglyceride%20level%20in,150%20mg%2FdL%20or%20higher.",
+#                       "https://www.cdc.gov/tobacco/campaign/tips/diseases/diabetes.html#:~:text=We%20now%20know%20that%20smoking%20is%20one%20cause%20of%20type%202%20diabetes.&text=In%20fact%2C%20people%20who%20smoke,people%20who%20don't%20smoke.&text=People%20with%20diabetes%20who%20smoke,and%20with%20managing%20their%20condition.",
+#                       "https://www.diabetes.co.uk/diabetes-and-obesity.html",
+#                       "https://www.healthhub.sg/a-z/diseases-and-conditions/622/hyperlipidemia",
+#                       "https://www.escardio.org/The-ESC/Press-Office/Press-releases/Body-mass-index-is-a-more-powerful-risk-factor-for-diabetes-than-genetics#:~:text=The%20highest%20BMI%20group%20had,groups%2C%20regardless%20of%20genetic%20risk."]
+#     topAdvice = []
+#     topAdviceLink = []
+#     count = 0
+#     for i in range(len(featureValue)):
+#         print(featureValue[i])
+#         if count == 3:
+#             break
+#         if  featureValue[i] > normalValue[i]:
+#             topAdvice.append(adviceList[i])
+#             topAdviceLink.append(adviceLink[i])            
+#             count += 1
+#     if len(topAdvice) == 0:
+#         topAdvice.append("")
+#         topAdvice.append("")
+#         topAdvice.append("")
+#         topAdviceLink.append("")
+#         topAdviceLink.append("")
+#         topAdviceLink.append("")
+#     elif len(topAdvice) == 1:
+#         topAdvice.append("")
+#         topAdvice.append("")
+#         topAdviceLink.append("")
+#         topAdviceLink.append("")
+#     elif len(topAdvice) == 2:
+#         topAdvice.append("")
+#         topAdviceLink.append("")
+
+#     return topAdvice, topAdviceLink
+
+# # print(top_advice(bloodtest,HE_HbA1c,HE_TG,HE_HP,pa_totMET,HE_HDL_st2,HE_HTG,HE_dbp,HE_sbp,HE_BUN,sm_presnt,HE_crea,HE_obe,HE_HCHOL,HE_BMI))
+
+# @app.route('/appointment')
+# def appointment_page():
+#     return render_template('appointment.html')
 
 @app.route('/about')
 def about_page():
@@ -791,6 +938,53 @@ def about_page():
 def contact_page():
     return render_template('contact.html')
 
+app.register_blueprint(api_blueprint, url_prefix = '/api/v1')
+# @app.route('/profile')
+# def profile_page():
+#     data = db.collection("Users").document(person["uid"]).get().to_dict()
+#     risk_score_goal = data['risk_score_goal']
+#     return render_template('profile.html', risk_score_goal = risk_score_goal, username = person["username"], fullname = person["fullname"], email = person["email"], dob = person["dob"])
+
+# @app.route('/change_username', methods=['GET', 'POST'])
+# def change_username():
+#     if request.method == 'POST':
+#         result = request.form
+#         username = result.get('username')
+#         person['username'] = username
+#         try: 
+#             #change username to the firebase realtime database
+#             data = {"username": username}
+#             db.collection("Users").document(person["uid"]).update(data)
+#             return redirect(url_for('profile_page'))
+#         except Exception as e:
+#             print(e)
+#             return redirect(url_for('profile_page'))
+    
+# @app.route('/change_riskscore', methods=['GET', 'POST'])
+# def change_riskscore():
+#     if request.method == 'POST':
+#         result = request.form
+#         risk_score_goal = result.get('risk_score_goal')
+#         person['risk_score_goal'] = risk_score_goal
+#         try: 
+#             #change username to the firebase realtime database
+#             data   = {"risk_score_goal": risk_score_goal}
+#             db.collection("Users").document(person["uid"]).update(data)
+#             return redirect(url_for('profile_page'))
+#         except Exception as e:
+#             print(e)
+#             return redirect(url_for('profile_page'))
+
+# @app.route('/delete_account')
+# def delete_account():
+#     try: 
+#         user = auth.get_user_by_email(person['email'])
+#         auth.delete_user(user.uid)
+#         db.collection("Users").document(person["uid"]).delete()
+#         return redirect(url_for('login_page'))
+#     except Exception as e:
+#         print(e)
+#         return redirect(url_for('profile_page'))
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=8080, debug=True)

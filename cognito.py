@@ -149,8 +149,8 @@ class CognitoIdentityProviderWrapper:
             print(
             "Couldn't get this user. Here's why: %s: %s",
             err.response['Error']['Code'], err.response['Error']['Message'])
-
             raise
+
     # Admin    
     def admin_delete_user(self, user_name):
         """
